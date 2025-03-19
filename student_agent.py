@@ -1,18 +1,24 @@
-# Remember to adjust your student ID in meta.xml
 import numpy as np
 import pickle
 import random
-import gym
+
+# 載入 Q-table
+try:
+    with open('q_table.pkl', 'rb') as f:
+        q_table = pickle.load(f)
+except (FileNotFoundError, EOFError, pickle.UnpicklingError):
+    print("Q-table not found or corrupted. Using random actions only.")
+    q_table = {}  # 無 Q-table 時預設為空字典
 
 def get_action(obs):
+    """根據已學到的 Q-table 做行為選擇，並考慮未知狀態的備案策略。"""
+    state = tuple(obs)  # obs 本身已是 `get_state()` 結果，因此轉為 tuple 即可
+
+    # 若 state 不在 Q-table，執行隨機行為 (避免無限循環)
+    if state not in q_table:
+        return random.choice([0, 1, 2, 3])  # 嘗試移動行為，避免直接選擇 Pick-up/Drop-off
     
-    # TODO: Train your own agent
-    # HINT: If you're using a Q-table, consider designing a custom key based on `obs` to store useful information.
-    # NOTE: Keep in mind that your Q-table may not cover all possible states in the testing environment.
-    #       To prevent crashes, implement a fallback strategy for missing keys. 
-    #       Otherwise, even if your agent performs well in training, it may fail during testing.
+    # 選擇最佳行為
+    action = np.argmax(q_table[state])
 
-
-    return random.choice([0, 1, 2, 3, 4, 5]) # Choose a random action
-    # You can submit this random agent to evaluate the performance of a purely random strategy.
-
+    return action
