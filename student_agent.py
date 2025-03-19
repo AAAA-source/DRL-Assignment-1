@@ -5,7 +5,7 @@ import random
 # 載入 Q-table
 try:
     with open('q_table.pkl', 'rb') as f:
-        q_table = pickle.load(f)
+        q_table = pickle.load(f, encoding='latin1')  # 加入 encoding 以解決 NumPy 相容問題
 except (FileNotFoundError, EOFError, pickle.UnpicklingError):
     print("Q-table not found or corrupted. Using random actions only.")
     q_table = {}  # 無 Q-table 時預設為空字典

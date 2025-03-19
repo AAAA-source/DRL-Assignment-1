@@ -1,5 +1,6 @@
 import numpy as np
 import pickle
+import matplotlib.pyplot as plt
 from simple_custom_taxi_env import SimpleTaxiEnv
 
 if not hasattr(np, 'bool8'):
@@ -33,6 +34,7 @@ def get_action(state):
         return np.random.choice(6)  # Random action (exploration)
     return np.argmax(q_table[state])  # Best action (exploitation)
 
+reward_per_episode = []
 # Q-learning training loop
 for episode in range(NUM_EPISODES):
     state, _ = env.reset()
@@ -79,12 +81,22 @@ for episode in range(NUM_EPISODES):
 
     # Decay epsilon to reduce exploration over time
     EPSILON = max(MIN_EPSILON, EPSILON * EPSILON_DECAY)
-
+    
+    reward_per_episode.append(total_reward)
+    
     if (episode + 1) % 100 == 0:
         print(f"Episode {episode + 1}/{NUM_EPISODES}, Total Reward: {total_reward:.2f}, Epsilon: {EPSILON:.3f}")
 
 # Save the Q-table for inference
 with open('q_table.pkl', 'wb') as f:
     pickle.dump(q_table, f)
+
+# Plot reward curve
+plt.plot(np.convolve(reward_per_episode, np.ones(100)/100, mode='valid'))
+plt.title('Average Reward per 100 Episodes')
+plt.xlabel('Episode (x100)')
+plt.ylabel('Average Reward')
+plt.grid(True)
+plt.show()
 
 print("Training complete. Q-table saved as 'q_table.pkl'.")
