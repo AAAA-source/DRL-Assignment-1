@@ -7,15 +7,14 @@ from IPython.display import clear_output
 import random
 
 class SimpleTaxiEnv():
-    def __init__(self, grid_size=5, fuel_limit=50, obstacle_count=5):
-        self.grid_size = grid_size
+    def __init__(self, fuel_limit=50, obstacle_count=5):
+        self.grid_size = random.randint(5, 10)  # 隨機選擇 Grid Size
         self.fuel_limit = fuel_limit
         self.current_fuel = fuel_limit
         self.passenger_picked_up = False
         self.obstacle_count = obstacle_count
         
-        self.stations = [(0, 0), (0, self.grid_size - 1),
-                         (self.grid_size - 1, 0), (self.grid_size - 1, self.grid_size - 1)]
+        self.stations = []
         self.passenger_loc = None
        
         self.obstacles = set()
@@ -28,7 +27,6 @@ class SimpleTaxiEnv():
             available_positions = [
                 (x, y) for x in range(self.grid_size)
                 for y in range(self.grid_size)
-                if (x, y) not in self.stations
             ]
             self.obstacles = set(random.sample(available_positions, self.obstacle_count))
             
@@ -60,6 +58,7 @@ class SimpleTaxiEnv():
 
     def reset(self):
         """Reset the environment with randomized RGBY station locations."""
+        self.grid_size = random.randint(5, 10)  # 每次 reset 時重新選擇 Grid Size
         self.current_fuel = self.fuel_limit
         self.passenger_picked_up = False
 
@@ -85,7 +84,6 @@ class SimpleTaxiEnv():
 
         return self.get_state(), {}
 
-        
     def step(self, action):
         """Perform an action and update the environment state."""
         taxi_row, taxi_col = self.taxi_pos
@@ -101,32 +99,34 @@ class SimpleTaxiEnv():
         elif action == 3:  # Move Left
             next_col -= 1
 
-        if action in [0, 1, 2, 3]:  # 移動行為
+        # 檢查是否撞到障礙物或超出邊界
+        if action in [0, 1, 2, 3]:
             if (next_row, next_col) in self.obstacles or not (0 <= next_row < self.grid_size and 0 <= next_col < self.grid_size):
                 reward -= 5
             else:
                 self.taxi_pos = (next_row, next_col)
                 if self.passenger_picked_up:
                     self.passenger_loc = self.taxi_pos
-        else:
-            if action == 4:  # PICKUP
-                if self.taxi_pos == self.passenger_loc:
-                    self.passenger_picked_up = True
-                    self.passenger_loc = (-1, -1)
-                    reward += 10
-                else:
-                    reward = -10
-            elif action == 5:  # DROPOFF
-                if self.passenger_picked_up:
-                    if self.taxi_pos == self.destination:
-                        reward += 50
-                        return self.get_state(), reward, True, {}
-                    else:
-                        reward -= 10
-                    self.passenger_picked_up = False
-                    self.passenger_loc = self.taxi_pos
+
+        # 執行 PICKUP 與 DROPOFF
+        if action == 4:  # PICKUP
+            if self.taxi_pos == self.passenger_loc:
+                self.passenger_picked_up = True
+                self.passenger_loc = (-1, -1)
+                reward += 10
+            else:
+                reward -= 10
+        elif action == 5:  # DROPOFF
+            if self.passenger_picked_up:
+                if self.taxi_pos == self.destination:
+                    reward += 50
+                    return self.get_state(), reward, True, {}
                 else:
                     reward -= 10
+                self.passenger_picked_up = False
+                self.passenger_loc = self.taxi_pos
+            else:
+                reward -= 10
 
         reward -= 0.1
         self.current_fuel -= 1
@@ -155,7 +155,6 @@ class SimpleTaxiEnv():
 
         return state
 
-
     def render_env(self, taxi_pos, action=None, step=None, fuel=None):
         clear_output(wait=True)
 
@@ -183,38 +182,6 @@ class SimpleTaxiEnv():
             print(" ".join(row))
         print("\n")
 
-
     def get_action_name(self, action):
         actions = ["Move South", "Move North", "Move East", "Move West", "Pick Up", "Drop Off"]
         return actions[action] if action is not None else "None"
-
-import importlib.util
-import time
-
-if __name__ == "__main__":
-    env = SimpleTaxiEnv(grid_size=5, fuel_limit=5000, obstacle_count=5)
-    
-    obs, _ = env.reset()  # 初始狀態 (reset 產生的 obs)
-    total_reward = 0
-    done = False
-    step_count = 0
-
-    # 匯入 student_agent.py 並使用 get_action()
-    spec = importlib.util.spec_from_file_location("student_agent", "student_agent.py")
-    student_agent = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(student_agent)
-
-    while not done:
-        env.render_env(env.taxi_pos, action=None, step=step_count, fuel=env.current_fuel)
-        #time.sleep(0.05)  # 控制顯示速度
-
-        # 使用 student_agent.py 的 get_action() 選擇行動
-        action = student_agent.get_action(obs)
-
-        # 執行行動，並取得新狀態
-        obs, reward, done, _ = env.step(action)  # 每一步的 obs 都會在 step() 中更新
-        total_reward += reward
-        step_count += 1
-
-    print(f"Test Run Finished in {step_count} steps, Total Reward: {total_reward}")
-

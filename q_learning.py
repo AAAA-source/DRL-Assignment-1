@@ -10,9 +10,9 @@ if not hasattr(np, 'bool8'):
 LEARNING_RATE = 0.1
 DISCOUNT_FACTOR = 0.99
 EPSILON = 1.0         # Initial exploration rate
-EPSILON_DECAY = 0.99995 # Decay rate for epsilon
+EPSILON_DECAY = 0.99999 # Decay rate for epsilon
 MIN_EPSILON = 0.1     # Minimum epsilon
-NUM_EPISODES = 100000  # Number of episodes for training
+NUM_EPISODES = 200000  # Number of episodes for training
 
 # Initialize environment
 env_config = {
@@ -65,7 +65,7 @@ for episode in range(NUM_EPISODES):
 
         # 碰撞障礙物 (X) 懲罰
         if action in [0, 1, 2, 3] and next_state[-4 + action]:  # 上下左右的障礙物對應
-            reward -= 50
+            reward -= 100
 
         # 初始化 next_state 在 Q-table 中的值
         if next_state not in q_table:
