@@ -58,7 +58,7 @@ for episode in range(NUM_EPISODES):
         if next_state[:2] == prev_position:
             same_position_counter += 1
             if same_position_counter >= 5:
-                reward -= 2
+                reward -= 200
         else:
             same_position_counter = 0
         prev_position = next_state[:2]
@@ -89,7 +89,7 @@ for episode in range(NUM_EPISODES):
 
 # Save the Q-table for inference
 with open('q_table.pkl', 'wb') as f:
-    pickle.dump(q_table, f)
+    pickle.dump(q_table, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 # Plot reward curve
 plt.plot(np.convolve(reward_per_episode, np.ones(100)/100, mode='valid'))
