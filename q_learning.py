@@ -10,9 +10,9 @@ if not hasattr(np, 'bool8'):
 LEARNING_RATE = 0.1
 DISCOUNT_FACTOR = 0.99
 EPSILON = 1.0         # Initial exploration rate
-EPSILON_DECAY = 0.9999 # Decay rate for epsilon
+EPSILON_DECAY = 0.99995 # Decay rate for epsilon
 MIN_EPSILON = 0.1     # Minimum epsilon
-NUM_EPISODES = 30000  # Number of episodes for training
+NUM_EPISODES = 100000  # Number of episodes for training
 
 # Initialize environment
 env_config = {
