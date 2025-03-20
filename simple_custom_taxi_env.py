@@ -59,25 +59,32 @@ class SimpleTaxiEnv():
         return False
 
     def reset(self):
-        """Reset the environment"""
+        """Reset the environment with randomized RGBY station locations."""
         self.current_fuel = self.fuel_limit
         self.passenger_picked_up = False
-        
+
+        # 🔄 重新隨機 Taxi 位置
         available_positions = [
             (x, y) for x in range(self.grid_size)
             for y in range(self.grid_size)
-            if (x, y) not in self.stations
         ]
 
         self.taxi_pos = random.choice(available_positions)
+
+        # 🎯 隨機化 RGBY 站點 (可出現在任何位置)
+        random.shuffle(available_positions)
+        self.stations = available_positions[:4]  # 取出四個隨機位置作為 RGBY
+
+        # 🚖 隨機選擇乘客和目的地
         self.passenger_loc = random.choice(self.stations)
-        
         possible_destinations = [s for s in self.stations if s != self.passenger_loc]
         self.destination = random.choice(possible_destinations)
-        
-        self.generate_obstacles()  # Add obstacles with a valid path check
+
+        # 🚧 隨機化障礙物
+        self.generate_obstacles()
 
         return self.get_state(), {}
+
         
     def step(self, action):
         """Perform an action and update the environment state."""
@@ -154,17 +161,16 @@ class SimpleTaxiEnv():
 
         grid = [['.'] * self.grid_size for _ in range(self.grid_size)]
 
-        # Place stations
-        grid[0][0] = 'R'
-        grid[0][4] = 'G'
-        grid[4][0] = 'Y'
-        grid[4][4] = 'B'
+        # 🎯 隨機化 RGBY 站點的顯示
+        station_symbols = ['R', 'G', 'B', 'Y']
+        for idx, (sx, sy) in enumerate(self.stations):
+            grid[sx][sy] = station_symbols[idx]
 
-        # Place taxi
+        # 🚖 放置 Taxi
         ty, tx = taxi_pos
         grid[ty][tx] = '🚖'
 
-        # Place obstacles
+        # 🚧 放置障礙物
         for ox, oy in self.obstacles:
             grid[ox][oy] = 'X'
 
@@ -176,6 +182,7 @@ class SimpleTaxiEnv():
         for row in grid:
             print(" ".join(row))
         print("\n")
+
 
     def get_action_name(self, action):
         actions = ["Move South", "Move North", "Move East", "Move West", "Pick Up", "Drop Off"]
