@@ -185,3 +185,34 @@ class SimpleTaxiEnv():
     def get_action_name(self, action):
         actions = ["Move South", "Move North", "Move East", "Move West", "Pick Up", "Drop Off"]
         return actions[action] if action is not None else "None"
+
+
+import importlib.util
+import time
+
+if __name__ == "__main__":
+    env = SimpleTaxiEnv(fuel_limit=5000, obstacle_count=5)
+    
+    obs, _ = env.reset()  # 初始狀態 (reset 產生的 obs)
+    total_reward = 0
+    done = False
+    step_count = 0
+
+    # 匯入 student_agent.py 並使用 get_action()
+    spec = importlib.util.spec_from_file_location("student_agent", "student_agent.py")
+    student_agent = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(student_agent)
+
+    while not done:
+        env.render_env(env.taxi_pos, action=None, step=step_count, fuel=env.current_fuel)
+        time.sleep(0.05)  # 控制顯示速度，確保動畫清楚可見
+
+        # 使用 student_agent.py 的 get_action() 選擇行動
+        action = student_agent.get_action(obs)
+
+        # 執行行動，並取得新狀態
+        obs, reward, done, _ = env.step(action)
+        total_reward += reward
+        step_count += 1
+
+    print(f"Test Run Finished in {step_count} steps, Total Reward: {total_reward}")
