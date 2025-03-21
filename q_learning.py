@@ -10,9 +10,9 @@ if not hasattr(np, 'bool8'):
 LEARNING_RATE = 0.1
 DISCOUNT_FACTOR = 0.99
 EPSILON = 1.0
-EPSILON_DECAY = 0.99999
-MIN_EPSILON = 0.1
-NUM_EPISODES = 200000
+EPSILON_DECAY = 0.999995
+MIN_EPSILON = 0.05
+NUM_EPISODES = 500000
 
 # Initialize environment
 env_config = {"fuel_limit": 5000, "obstacle_count": 5}
