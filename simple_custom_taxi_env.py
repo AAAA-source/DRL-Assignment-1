@@ -198,14 +198,20 @@ if __name__ == "__main__":
     done = False
     step_count = 0
 
+    # 顯示乘客和目的地的位置
+    print(f"Passenger Location: {env.passenger_loc}")
+    print(f"Destination Location: {env.destination}")
+
     # 匯入 student_agent.py 並使用 get_action()
     spec = importlib.util.spec_from_file_location("student_agent", "student_agent.py")
     student_agent = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(student_agent)
 
+    action = None
+
     while not done:
-        env.render_env(env.taxi_pos, action=None, step=step_count, fuel=env.current_fuel)
-        time.sleep(0.05)  # 控制顯示速度，確保動畫清楚可見
+        env.render_env(env.taxi_pos, action=action, step=step_count, fuel=env.current_fuel)
+        #time.sleep(0.05)  # 控制顯示速度，確保動畫清楚可見
 
         # 使用 student_agent.py 的 get_action() 選擇行動
         action = student_agent.get_action(obs)
@@ -216,3 +222,4 @@ if __name__ == "__main__":
         step_count += 1
 
     print(f"Test Run Finished in {step_count} steps, Total Reward: {total_reward}")
+

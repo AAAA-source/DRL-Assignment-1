@@ -32,6 +32,8 @@ def get_action(state):
     return np.argmax(q_table[state])
 
 reward_per_episode = []
+step_per_episode = []
+state_count = 0
 
 # Q-learning training loop
 for episode in range(NUM_EPISODES):
@@ -42,6 +44,7 @@ for episode in range(NUM_EPISODES):
     total_reward = 0
     prev_position = state[:2]
     same_position_counter = 0
+    total_step = 0
 
     while not done:
         action = get_action(state)
@@ -51,17 +54,19 @@ for episode in range(NUM_EPISODES):
         # 🎯 Reward Shaping
         # 每步移動 -0.1 懲罰
         reward -= 0.1
+        total_step += 1
 
-        # 🚨 Stagnation Penalty (無效循環)
+        # 🚨 Stagnation Penalty (無效循環) — 強化懲罰
         if next_state[:2] == prev_position:
             same_position_counter += 1
-            if same_position_counter >= 3:
-                reward -= 200
+            reward -= 100  # 每次原地不動懲罰
+            if same_position_counter >= 2:
+                reward -= 500
         else:
             same_position_counter = 0
         prev_position = next_state[:2]
 
-        # 🧭 Navigation Guidance
+        # 🧭 Navigation Guidance (前進與遠離目標的懲罰/獎勵相等)
         taxi_pos = state[:2]
         passenger_pos = state[2:4]
         destination_pos = state[4:6]
@@ -70,26 +75,51 @@ for episode in range(NUM_EPISODES):
             dist_before = abs(taxi_pos[0] - passenger_pos[0]) + abs(taxi_pos[1] - passenger_pos[1])
             dist_after = abs(next_state[0] - passenger_pos[0]) + abs(next_state[1] - passenger_pos[1])
             if dist_after < dist_before:
-                reward += 1
+                reward += 10
+            elif dist_after > dist_before:
+                reward -= 15  # ⚠️ 與「接近」的獎勵一致，避免原地刷分
         else:
             dist_before = abs(taxi_pos[0] - destination_pos[0]) + abs(taxi_pos[1] - destination_pos[1])
             dist_after = abs(next_state[0] - destination_pos[0]) + abs(next_state[1] - destination_pos[1])
             if dist_after < dist_before:
-                reward += 1
+                reward += 10
+            elif dist_after > dist_before:
+                reward -= 15  # ⚠️ 與「接近」的獎勵一致，避免原地刷分
 
-        # ❌ Avoiding Mistakes
-        if action == 4 and state[:2] != state[2:4]:  # Incorrect PICKUP
-            reward -= 50
-        if action == 5 and state[:2] != state[4:6]:  # Incorrect DROPOFF
-            reward -= 50
+        # 🚖 正確執行 PICKUP
+        if action == 4:  # PICKUP
+            if state[:2] == state[2:4] and not env.passenger_picked_up:
+                reward += 50  # ✅ 正確執行 PICKUP
+            elif state[:2] != state[2:4]:
+                reward -= 100  # ❌ 錯誤執行 PICKUP
+
+        # 🚨 應該 PICKUP 卻未執行 (走過頭)
+        if not env.passenger_picked_up and state[:2] == state[2:4] and action != 4:
+            reward -= 100  # ❗ 應該 PICKUP 卻沒做
+
+        # 🚖 正確執行 DROPOFF
+        if action == 5:  # DROPOFF
+            if state[:2] == state[4:6] and env.passenger_picked_up:
+                reward += 100  # ✅ 正確執行 DROPOFF
+            elif state[:2] != state[4:6]:
+                reward -= 100  # ❌ 錯誤執行 DROPOFF
+
+        # 🚨 應該 DROPOFF 卻未執行 (走過頭)
+        if env.passenger_picked_up and state[:2] == state[4:6] and action != 5:
+            reward -= 100  # ❗ 應該 DROPOFF 卻沒做
 
         # 🚧 Obstacle Collision Penalty
         if action in [0, 1, 2, 3] and next_state[-4 + action]:
             reward -= 100
+            
+        if done :
+            reward += 1000
+            
 
         # 初始化 next_state 在 Q-table 中的值
         if next_state not in q_table:
             q_table[next_state] = np.zeros(6)
+            state_count += 1
 
         # Q-value update
         best_next_action = np.argmax(q_table[next_state])
@@ -99,13 +129,17 @@ for episode in range(NUM_EPISODES):
         state = next_state
         total_reward += reward
 
+
     # Decay epsilon
     EPSILON = max(MIN_EPSILON, EPSILON * EPSILON_DECAY)
     
     reward_per_episode.append(total_reward)
+    step_per_episode.append(total_step)
     
     if (episode + 1) % 100 == 0:
-        print(f"Episode {episode + 1}/{NUM_EPISODES}, Total Reward: {total_reward:.2f}, Epsilon: {EPSILON:.3f}")
+        average_step = np.mean( step_per_episode[-100 : ] )
+        average_reward = np.mean( reward_per_episode[-100 : ] )
+        print(f"Episode {episode + 1}/{NUM_EPISODES}, Total Reward: {average_reward:.2f}, Epsilon: {EPSILON:.3f} , Average Step : {average_step}")
 
 # Save the Q-table
 with open('q_table.pkl', 'wb') as f:
@@ -113,10 +147,11 @@ with open('q_table.pkl', 'wb') as f:
 
 # Plot reward curve
 plt.plot(np.convolve(reward_per_episode, np.ones(100)/100, mode='valid'))
-plt.title('Average Reward per 100 Episodes')
-plt.xlabel('Episode (x100)')
+plt.title('Reward per Episodes')
+plt.xlabel('Episode')
 plt.ylabel('Average Reward')
 plt.grid(True)
 plt.show()
 
 print("Training complete. Q-table saved as 'q_table.pkl'.")
+print(f"total state : {state_count}") ;
