@@ -13,7 +13,7 @@ DISCOUNT_FACTOR = 0.99
 EPSILON = 1.0
 EPSILON_DECAY = 0.99999
 MIN_EPSILON = 0.1
-NUM_EPISODES = 100000
+NUM_EPISODES = 150000
 
 # Initialize environment
 env_config = {"fuel_limit": 5000, "obstacle_count": 5}
