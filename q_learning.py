@@ -11,7 +11,7 @@ if not hasattr(np, 'bool8'):
 LEARNING_RATE = 0.1
 DISCOUNT_FACTOR = 0.99
 EPSILON = 1.0
-EPSILON_DECAY = 0.99998
+EPSILON_DECAY = 0.99999
 MIN_EPSILON = 0.1
 NUM_EPISODES = 100000
 
@@ -22,16 +22,7 @@ env = SimpleTaxiEnv(**env_config)
 # Q-table initialization
 q_table = {}
 
-# Epsilon-greedy action selection
-def get_action(state):
-    state = tuple(state)
-    if state not in q_table:
-        q_table[state] = np.zeros(6)
-
-    if np.random.random() < EPSILON:
-        return np.random.choice(6)
-    return np.argmax(q_table[state])
-
+# Tracking metrics
 reward_per_episode = []
 step_per_episode = []
 oscillation_penalty_per_episode = []
@@ -47,39 +38,42 @@ for episode in range(NUM_EPISODES):
     total_reward = 0
     total_step = 0
     total_oscillation_penalty = 0
-    success = False  # 新增追蹤成功標誌
+    success = False
 
     # Tracking conditions
     previously_picked_up = False
     previously_dropped_off = False
     prev_position = state[:2]
     previous_position = None
+    oscillation_history = []
 
     while not done:
+        # Epsilon-Greedy Action Selection
+        if state not in q_table:
+            q_table[state] = np.zeros(6)
+            action = np.argmax(q_table[state])
+        else :
+            if np.random.random() < EPSILON:
+                action = np.random.choice(6)  # Explore
+            else:
+                action = np.argmax(q_table[state])  # Exploit
 
-        action = get_action(state)
         next_state, reward, done = env.step(action)
         next_state = tuple(next_state)
 
-        # 🎯 Reward Shaping
-        reward -= 1  # 每步固定懲罰
+        # Reward Shaping
+        reward -= 10  # 每步固定懲罰
         total_step += 1
 
-        # 🚨 Stagnation Penalty (原地不動)
-        if next_state[:2] == prev_position:
-            reward -= 10
-            total_oscillation_penalty += 100
+        # 🚨 Stagnation & Oscillation Penalty
+        oscillation_history.append(state[:2])
+        if len(oscillation_history) > 10:
+            oscillation_history.pop(0)
+        if oscillation_history.count(state[:2]) >= 5:
+            reward -= 500
+            total_oscillation_penalty += 500
 
-        # 🚨 強化來回震盪懲罰 (立即觸發)
-        if previous_position == next_state[:2] and prev_position == state[:2]:
-            reward -= 2000000000000
-            total_oscillation_penalty += 20000
-
-        # 更新位置追蹤
-        previous_position = prev_position
-        prev_position = next_state[:2]
-
-        # 🧭 Navigation Guidance
+        # Navigation Guidance
         taxi_pos = state[:2]
         passenger_pos = state[2:4]
         destination_pos = state[4:6]
@@ -88,47 +82,38 @@ for episode in range(NUM_EPISODES):
             dist_before = abs(taxi_pos[0] - passenger_pos[0]) + abs(taxi_pos[1] - passenger_pos[1])
             dist_after = abs(next_state[0] - passenger_pos[0]) + abs(next_state[1] - passenger_pos[1])
             if dist_after < dist_before:
-                reward += 5000000
+                reward += 20
             elif dist_after > dist_before:
-                reward -= 5000000
+                reward -= 50
         else:
             dist_before = abs(taxi_pos[0] - destination_pos[0]) + abs(taxi_pos[1] - destination_pos[1])
             dist_after = abs(next_state[0] - destination_pos[0]) + abs(next_state[1] - destination_pos[1])
             if dist_after < dist_before:
-                reward += 10000000
+                reward += 50
             elif dist_after > dist_before:
-                reward -= 10000000
+                reward -= 100
 
-        # 🚖 正確執行 PICKUP
-        if action == 4:
-            if state[:2] == passenger_pos and not previously_picked_up and env.passenger_picked_up:
-                reward += 100000
-                previously_picked_up = True
-            elif previously_picked_up:
-                reward -= 500000000
-            elif state[:2] != passenger_pos:
-                reward -= 500000000
+        # 🚖 Correct PICKUP
+        if action == 4 and state[:2] == passenger_pos and not previously_picked_up:
+            reward += 500
+            previously_picked_up = True
 
-        # 🚖 正確執行 DROPOFF
-        if action == 5:
-            if state[:2] == destination_pos and previously_picked_up and not env.passenger_picked_up:
-                reward += 200000
-                previously_dropped_off = True
-            elif previously_dropped_off:
-                reward -= 500000000
-            elif state[:2] != destination_pos:
-                reward -= 500000000
+        # 🚖 Correct DROPOFF
+        if action == 5 and state[:2] == destination_pos and previously_picked_up:
+            reward += 1000
+            previously_dropped_off = True
 
         # 🚧 Obstacle Collision Penalty
         if action in [0, 1, 2, 3] and next_state == state:
-            reward -= 100000
+            reward -= 1000
             total_oscillation_penalty += 1000
 
-        if done:
-            if success:
-                reward += 50000000000000000 # ⭐ 成功完成任務的額外獎勵
+        # Success condition
+        if done and env.current_fuel > 0:
+            reward += 99999
+            success = True
 
-        # 初始化 next_state 在 Q-table 中的值
+        # Initialize Q-table entry for new state
         if next_state not in q_table:
             q_table[next_state] = np.zeros(6)
             state_count += 1
@@ -142,27 +127,23 @@ for episode in range(NUM_EPISODES):
         total_reward += reward
 
     EPSILON = max(MIN_EPSILON, EPSILON * EPSILON_DECAY)
-    #print(f"Episode {episode + 1} ended at step {total_step}, Fuel left: {env.current_fuel}")
-
 
     reward_per_episode.append(total_reward)
     step_per_episode.append(total_step)
     oscillation_penalty_per_episode.append(total_oscillation_penalty)
-    if env.current_fuel > 0 :
-        #print("success ! count + 1")
+    if success:
         success_count += 1
-    
 
-    if (episode + 1) % 100 == 0:
-        average_step = np.mean(step_per_episode[-100:])
-        average_reward = np.mean(reward_per_episode[-100:])
-        average_oscillation_penalty = np.mean(oscillation_penalty_per_episode[-100:])
+    if (episode + 1) % 1000 == 0:
+        average_step = np.mean(step_per_episode[-1000:])
+        average_reward = np.mean(reward_per_episode[-1000:])
+        average_oscillation_penalty = np.mean(oscillation_penalty_per_episode[-1000:])
         print(f"Episode {episode + 1}/{NUM_EPISODES}, "
               f"Total Reward: {average_reward:.2f}, "
               f"Epsilon: {EPSILON:.3f}, "
               f"Average Step: {average_step}, "
               f"Avg Oscillation Penalty: {average_oscillation_penalty}, "
-              f"Success Rate: {success_count / episode + 1}%")
+              f"Success Rate: {success_count / (episode + 1) * 100:.2f}%")
 
 # Save the Q-table
 with open('q_table.pkl', 'wb') as f:
