@@ -7,8 +7,8 @@ from IPython.display import clear_output
 import random
 
 class SimpleTaxiEnv():
-    def __init__(self, fuel_limit=50, obstacle_count=5):
-        self.grid_size = random.randint(5, 10)  # 隨機選擇 Grid Size
+    def __init__(self, fuel_limit=5000, obstacle_count=5):
+        self.grid_size = random.randint(5, 5)  # 隨機選擇 Grid Size
         self.fuel_limit = fuel_limit
         self.current_fuel = fuel_limit
         self.passenger_picked_up = False
@@ -58,7 +58,7 @@ class SimpleTaxiEnv():
 
     def reset(self):
         """Reset the environment with randomized RGBY station locations."""
-        self.grid_size = random.randint(5, 10)  # 每次 reset 時重新選擇 Grid Size
+        self.grid_size = random.randint(5, 5)  # 每次 reset 時重新選擇 Grid Size
         self.current_fuel = self.fuel_limit
         self.passenger_picked_up = False
 
@@ -120,7 +120,7 @@ class SimpleTaxiEnv():
             if self.passenger_picked_up:
                 if self.taxi_pos == self.destination:
                     reward += 50
-                    return self.get_state(), reward, True, {}
+                    return self.get_state(), reward, True
                 else:
                     reward -= 10
                 self.passenger_picked_up = False
@@ -131,15 +131,16 @@ class SimpleTaxiEnv():
         reward -= 0.1
         self.current_fuel -= 1
         if self.current_fuel <= 0:
-            return self.get_state(), reward - 10, True, {}
+            return self.get_state(), reward - 10, True
 
-        return self.get_state(), reward, False, {}
+        return self.get_state(), reward, False
+
 
     def get_state(self):
         """Return the current environment state following the agreed-upon format."""
         taxi_row, taxi_col = self.taxi_pos
-        passenger_row, passenger_col = self.passenger_loc if not self.passenger_picked_up else (self.grid_size, self.grid_size)
-        destination_row, destination_col = self.destination if self.passenger_picked_up else (self.grid_size, self.grid_size)
+        passenger_row, passenger_col = self.passenger_loc if not self.passenger_picked_up else (20, 20)
+        destination_row, destination_col = self.destination if self.passenger_picked_up else (20, 20)
 
         obstacle_north = int(taxi_row == 0 or (taxi_row - 1, taxi_col) in self.obstacles)
         obstacle_south = int(taxi_row == self.grid_size - 1 or (taxi_row + 1, taxi_col) in self.obstacles)
@@ -211,13 +212,17 @@ if __name__ == "__main__":
 
     while not done:
         env.render_env(env.taxi_pos, action=action, step=step_count, fuel=env.current_fuel)
+        
+        # 印出每一步的 state 詳情
+        print(f"State at Step {step_count}: {obs}")
+        
         #time.sleep(0.05)  # 控制顯示速度，確保動畫清楚可見
 
         # 使用 student_agent.py 的 get_action() 選擇行動
         action = student_agent.get_action(obs)
 
         # 執行行動，並取得新狀態
-        obs, reward, done, _ = env.step(action)
+        obs, reward, done  = env.step(action)
         total_reward += reward
         step_count += 1
 

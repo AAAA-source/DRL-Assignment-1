@@ -21,8 +21,8 @@ def get_action(obs):
     if state not in q_table:
         return random.choice([0, 1, 2, 3])
         
-    if np.random.random() < EPSILON:  
-        return random.choice([0, 1, 2, 3, 4, 5])
+    #if np.random.random() < EPSILON:
+    #    return random.choice([0, 1, 2, 3, 4, 5])
 
     action = np.argmax(q_table[state])
     return int(action) if action in range(6) else random.choice([0, 1, 2, 3])
