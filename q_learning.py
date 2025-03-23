@@ -8,12 +8,12 @@ if not hasattr(np, 'bool8'):
     np.bool8 = bool
 
 # Hyperparameters
-LEARNING_RATE = 0.3
-DISCOUNT_FACTOR = 0.9
+LEARNING_RATE = 0.9
+DISCOUNT_FACTOR = 0.1
 EPSILON = 1.0
 EPSILON_DECAY = 0.99999
 MIN_EPSILON = 0.1
-NUM_EPISODES = 150000
+NUM_EPISODES = 200000
 
 # Initialize environment
 env_config = {"fuel_limit": 5000, "obstacle_count": 5}
@@ -28,6 +28,7 @@ step_per_episode = []
 oscillation_penalty_per_episode = []
 success_count = 0
 state_count = 0
+shake_penalty_per_episode = []
 
 # Q-learning training loop
 for episode in range(NUM_EPISODES):
@@ -47,6 +48,8 @@ for episode in range(NUM_EPISODES):
     previous_position = None
     oscillation_history = []
     previous_success_count = 0
+    shake_penalty = 0
+    oscillation_history = []
 
     while not done:
         # Epsilon-Greedy Action Selection
@@ -66,13 +69,14 @@ for episode in range(NUM_EPISODES):
         reward -= 10  # 每步固定懲罰
         total_step += 1
 
-        # 🚨 Stagnation & Oscillation Penalty
         oscillation_history.append(state[:2])
-        if len(oscillation_history) > 10:
-            oscillation_history.pop(0)
-        if oscillation_history.count(state[:2]) >= 5:
-            reward -= 50000
-            total_oscillation_penalty += 50000
+        if len(oscillation_history) > 5:
+            oscillation_history.pop(0)  # 保留最近 5 步行動歷史
+
+        # 如果近 5 步內出現3次以上的重複位置，視為震盪
+        if oscillation_history.count(state[:2]) >= 3:
+            reward -= 1000
+            shake_penalty += 1000
 
         # Navigation Guidance
         taxi_pos = state[:2]
@@ -138,16 +142,20 @@ for episode in range(NUM_EPISODES):
     oscillation_penalty_per_episode.append(total_oscillation_penalty)
     if success:
         success_count += 1
+        
+    shake_penalty_per_episode.append(shake_penalty)
 
     if (episode + 1) % 1000 == 0:
         average_step = np.mean(step_per_episode[-1000:])
         average_reward = np.mean(reward_per_episode[-1000:])
         average_oscillation_penalty = np.mean(oscillation_penalty_per_episode[-1000:])
+        average_shake_penalty = np.mean(shake_penalty_per_episode[-1000:])
         print(f"Episode {episode + 1}/{NUM_EPISODES}, "
               f"Total Reward: {average_reward:.2f}, "
               f"Epsilon: {EPSILON:.3f}, "
               f"Average Step: {average_step}, "
               f"Avg Oscillation Penalty: {average_oscillation_penalty}, "
+              f"Shake penalty : {average_shake_penalty}"
               f"Success Rate: {(success_count - previous_success_count) / (episode + 1) * 100:.2f}%")
         previous_success_count = success_count
 
