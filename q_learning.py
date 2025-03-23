@@ -9,7 +9,7 @@ if not hasattr(np, 'bool8'):
 
 # Hyperparameters
 LEARNING_RATE = 0.9
-DISCOUNT_FACTOR = 0.1
+DISCOUNT_FACTOR = 0.05
 EPSILON = 1.0
 EPSILON_DECAY = 0.99999
 MIN_EPSILON = 0.1
@@ -75,8 +75,8 @@ for episode in range(NUM_EPISODES):
 
         # 如果近 5 步內出現3次以上的重複位置，視為震盪
         if oscillation_history.count(state[:2]) >= 3:
-            reward -= 1000
-            shake_penalty += 1000
+            reward -= 10000
+            shake_penalty += 10000
 
         # Navigation Guidance
         taxi_pos = state[:2]
@@ -100,17 +100,17 @@ for episode in range(NUM_EPISODES):
 
         # 🚖 Correct PICKUP
         if action == 4 and state[:2] == passenger_pos and not previously_picked_up:
-            reward += 500
+            reward += 5000
             previously_picked_up = True
         elif action == 4 :
-            reward -= 500
+            reward -= 5000
 
         # 🚖 Correct DROPOFF
         if action == 5 and state[:2] == destination_pos and previously_picked_up:
-            reward += 1000
+            reward += 10000
             previously_dropped_off = True
         elif action == 5 :
-            reward -= 1000
+            reward -= 10000
 
         # 🚧 Obstacle Collision Penalty
         if action in [0, 1, 2, 3] and next_state == state:

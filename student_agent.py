@@ -18,6 +18,7 @@ def get_action(obs , epsilon = 0.0):
     state = tuple(obs)
 
     if state not in q_table:
+        #print("this state is not in q table")
         return random.choice([0, 1, 2, 3, 4, 5])
     
     #if np.random.random() < 0.2:
