@@ -8,12 +8,12 @@ if not hasattr(np, 'bool8'):
     np.bool8 = bool
 
 # Hyperparameters
-LEARNING_RATE = 0.9
-DISCOUNT_FACTOR = 0.05
+LEARNING_RATE = 0.99
+DISCOUNT_FACTOR = 0.01
 EPSILON = 1.0
-EPSILON_DECAY = 0.99999
+EPSILON_DECAY = 0.999992
 MIN_EPSILON = 0.1
-NUM_EPISODES = 200000
+NUM_EPISODES = 300000
 
 # Initialize environment
 env_config = {"fuel_limit": 5000, "obstacle_count": 5}
@@ -75,8 +75,8 @@ for episode in range(NUM_EPISODES):
 
         # 如果近 5 步內出現3次以上的重複位置，視為震盪
         if oscillation_history.count(state[:2]) >= 3:
-            reward -= 10000
-            shake_penalty += 10000
+            reward -= 100000
+            shake_penalty += 100000
 
         # Navigation Guidance
         taxi_pos = state[:2]
@@ -113,9 +113,9 @@ for episode in range(NUM_EPISODES):
             reward -= 10000
 
         # 🚧 Obstacle Collision Penalty
-        if action in [0, 1, 2, 3] and next_state == state:
-            reward -= 1000
-            total_oscillation_penalty += 1000
+        if next_state == state:
+            reward -= 100000
+            total_oscillation_penalty += 100000
 
         # Success condition
         if done and env.current_fuel > 0:

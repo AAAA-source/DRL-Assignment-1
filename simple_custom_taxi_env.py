@@ -12,7 +12,7 @@ class SimpleTaxiEnv():
         self.fuel_limit = fuel_limit
         self.current_fuel = fuel_limit
         self.passenger_picked_up = False
-        self.obstacle_count = np.random.choice(self.grid_size * self.grid_size // 3)
+        self.obstacle_count = np.random.choice(self.grid_size * self.grid_size // 5)
         
         self.stations = []
         self.passenger_loc = None
