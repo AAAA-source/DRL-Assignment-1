@@ -8,12 +8,12 @@ if not hasattr(np, 'bool8'):
     np.bool8 = bool
 
 # Hyperparameters
-LEARNING_RATE = 0.1
-DISCOUNT_FACTOR = 0.99
+LEARNING_RATE = 0.3
+DISCOUNT_FACTOR = 0.9
 EPSILON = 1.0
-EPSILON_DECAY = 0.9999995
+EPSILON_DECAY = 0.99999
 MIN_EPSILON = 0.1
-NUM_EPISODES = 1500000
+NUM_EPISODES = 150000
 
 # Initialize environment
 env_config = {"fuel_limit": 5000, "obstacle_count": 5}
@@ -46,6 +46,7 @@ for episode in range(NUM_EPISODES):
     prev_position = state[:2]
     previous_position = None
     oscillation_history = []
+    previous_success_count = 0
 
     while not done:
         # Epsilon-Greedy Action Selection
@@ -97,11 +98,15 @@ for episode in range(NUM_EPISODES):
         if action == 4 and state[:2] == passenger_pos and not previously_picked_up:
             reward += 500
             previously_picked_up = True
+        elif action == 4 :
+            reward -= 500
 
         # 🚖 Correct DROPOFF
         if action == 5 and state[:2] == destination_pos and previously_picked_up:
             reward += 1000
             previously_dropped_off = True
+        elif action == 5 :
+            reward -= 1000
 
         # 🚧 Obstacle Collision Penalty
         if action in [0, 1, 2, 3] and next_state == state:
@@ -110,7 +115,7 @@ for episode in range(NUM_EPISODES):
 
         # Success condition
         if done and env.current_fuel > 0:
-            reward += 99999
+            reward += 10000
             success = True
 
         # Initialize Q-table entry for new state
@@ -143,7 +148,8 @@ for episode in range(NUM_EPISODES):
               f"Epsilon: {EPSILON:.3f}, "
               f"Average Step: {average_step}, "
               f"Avg Oscillation Penalty: {average_oscillation_penalty}, "
-              f"Success Rate: {success_count / (episode + 1) * 100:.2f}%")
+              f"Success Rate: {(success_count - previous_success_count) / (episode + 1) * 100:.2f}%")
+        previous_success_count = success_count
 
 # Save the Q-table
 with open('q_table.pkl', 'wb') as f:
