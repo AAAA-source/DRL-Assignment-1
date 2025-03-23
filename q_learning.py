@@ -9,7 +9,7 @@ if not hasattr(np, 'bool8'):
 
 # Hyperparameters
 LEARNING_RATE = 0.99
-DISCOUNT_FACTOR = 0.01
+DISCOUNT_FACTOR = 0.0001
 EPSILON = 1.0
 EPSILON_DECAY = 0.999992
 MIN_EPSILON = 0.05
