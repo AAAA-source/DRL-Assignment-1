@@ -8,11 +8,11 @@ import random
 
 class SimpleTaxiEnv():
     def __init__(self, fuel_limit=5000, obstacle_count=5):
-        self.grid_size = random.randint(5, 5)  # 隨機選擇 Grid Size
+        self.grid_size = random.randint(5, 10)  # 隨機選擇 Grid Size
         self.fuel_limit = fuel_limit
         self.current_fuel = fuel_limit
         self.passenger_picked_up = False
-        self.obstacle_count = obstacle_count
+        self.obstacle_count = np.random.choice(self.grid_size * self.grid_size // 3)
         
         self.stations = []
         self.passenger_loc = None
@@ -58,7 +58,7 @@ class SimpleTaxiEnv():
 
     def reset(self):
         """Reset the environment with randomized RGBY station locations."""
-        self.grid_size = random.randint(5, 5)  # 每次 reset 時重新選擇 Grid Size
+        self.grid_size = random.randint(5, 10)  # 每次 reset 時重新選擇 Grid Size
         self.current_fuel = self.fuel_limit
         self.passenger_picked_up = False
 

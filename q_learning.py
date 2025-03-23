@@ -11,9 +11,9 @@ if not hasattr(np, 'bool8'):
 LEARNING_RATE = 0.1
 DISCOUNT_FACTOR = 0.99
 EPSILON = 1.0
-EPSILON_DECAY = 0.99999
+EPSILON_DECAY = 0.9999995
 MIN_EPSILON = 0.1
-NUM_EPISODES = 150000
+NUM_EPISODES = 1500000
 
 # Initialize environment
 env_config = {"fuel_limit": 5000, "obstacle_count": 5}
@@ -70,8 +70,8 @@ for episode in range(NUM_EPISODES):
         if len(oscillation_history) > 10:
             oscillation_history.pop(0)
         if oscillation_history.count(state[:2]) >= 5:
-            reward -= 500
-            total_oscillation_penalty += 500
+            reward -= 50000
+            total_oscillation_penalty += 50000
 
         # Navigation Guidance
         taxi_pos = state[:2]
